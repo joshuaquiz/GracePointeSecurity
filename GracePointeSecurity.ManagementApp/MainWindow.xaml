@@ -1,0 +1,36 @@
+﻿<Window
+	x:Class="GracePointeSecurity.ManagementApp.MainWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:library="clr-namespace:GracePointeSecurity.Library;assembly=GracePointeSecurity.Library"
+	mc:Ignorable="d"
+	Title="Video Management"
+	Height="500"
+	Width="500">
+	<DockPanel>
+		<ToolBarTray
+			DockPanel.Dock="Top">
+			<ToolBar>
+				<Button
+					Name="SettingsButton"
+					Content="Settings"
+					Click="SettingsButton_Onclick"></Button>
+			</ToolBar>
+		</ToolBarTray>
+		<Label
+			DockPanel.Dock="Top"
+			Margin="10"
+			Content="{Binding LastRun}"
+			ContentStringFormat="yyyy-MM-dd HH:mm:ss"
+			DataContext="{Binding Source={x:Static library:State.CurrentState}}"></Label>
+		<TextBox
+			DockPanel.Dock="Left"
+			Margin="10"
+			x:Name="Logs"
+			IsReadOnly="True"
+			HorizontalScrollBarVisibility="Auto"
+			VerticalScrollBarVisibility="Auto"></TextBox>
+	</DockPanel>
+</Window>
