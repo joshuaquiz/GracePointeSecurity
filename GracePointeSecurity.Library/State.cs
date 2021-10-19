@@ -12,9 +12,15 @@ namespace GracePointeSecurity.Library
 			new Lazy<SQLiteConnection>(
 			InitDatabase);
 
+		private static readonly Lazy<AwsCredentials> AwsCredentialsSettings =
+			new Lazy<AwsCredentials>(
+			InitAwsState);
+
 		private static readonly Lazy<CameraFilesLocationsConfiguration> Configuration =
 			new Lazy<CameraFilesLocationsConfiguration>(
-			InitState);
+			InitLocationState);
+
+		public static AwsCredentials AwsCredentials => AwsCredentialsSettings.Value;
 
 		public static CameraFilesLocationsConfiguration CurrentState => Configuration.Value;
 
@@ -26,6 +32,7 @@ namespace GracePointeSecurity.Library
 				Path.Combine(
 					AppDomain.CurrentDomain.BaseDirectory,
 					"db.db3"));
+			connection.CreateTable<AwsCredentials>();
 			connection.CreateTable<CameraFilesLocationsConfiguration>();
 			return connection;
 		}
@@ -38,7 +45,17 @@ namespace GracePointeSecurity.Library
 			CameraFilesLocationsConfiguration = CurrentState;
 		}
 
-		private static CameraFilesLocationsConfiguration InitState()
+		private static AwsCredentials InitAwsState()
+		{
+			var config = AwsCredentialsConfiguration;
+			config.PropertyChanged += (sender, args) =>
+			{
+                AwsCredentialsConfiguration = (AwsCredentials) sender;
+			};
+			return config;
+		}
+
+		private static CameraFilesLocationsConfiguration InitLocationState()
 		{
 			var config = CameraFilesLocationsConfiguration;
 			config.PropertyChanged += (sender, args) =>
@@ -46,6 +63,33 @@ namespace GracePointeSecurity.Library
 				CameraFilesLocationsConfiguration = (CameraFilesLocationsConfiguration) sender;
 			};
 			return config;
+		}
+
+		private static AwsCredentials AwsCredentialsConfiguration
+        {
+            get => DatabaseConnection.Table<AwsCredentials>()
+                       .FirstOrDefault()
+                   ?? new AwsCredentials();
+			set
+			{
+				if (DatabaseConnection.Table<AwsCredentials>().FirstOrDefault() == null)
+				{
+					DatabaseConnection.Insert(value);
+				}
+				else
+				{
+					var command = new SQLiteCommand(DatabaseConnection)
+					{
+						CommandText =
+							$@"UPDATE
+	{nameof(AwsCredentials)}
+SET
+	{nameof(AwsCredentials.AccessKeyId)} = ""{value.AccessKeyId}"",
+	{nameof(AwsCredentials.SecretAccessKey)} = ""{value.SecretAccessKey}"""
+					};
+					command.ExecuteNonQuery();
+				}
+			}
 		}
 
 		private static CameraFilesLocationsConfiguration CameraFilesLocationsConfiguration

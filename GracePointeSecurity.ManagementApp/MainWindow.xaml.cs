@@ -7,7 +7,18 @@ namespace GracePointeSecurity.ManagementApp
 	{
         public MainWindow()
 		{
-			InitializeComponent();
+            if (string.IsNullOrWhiteSpace(State.AwsCredentials.SecretAccessKey))
+            {
+                new ProductKey().ShowDialog();
+			}
+
+            if (string.IsNullOrWhiteSpace(State.CurrentState.OriginalVideoFolder)
+                || string.IsNullOrWhiteSpace(State.CurrentState.SortedVideoFolder))
+            {
+                new SettingsWindow().ShowDialog();
+            }
+
+            InitializeComponent();
 			var logging = new Logging(s =>
 				Logs.Dispatcher.InvokeAsync(() =>
 				{

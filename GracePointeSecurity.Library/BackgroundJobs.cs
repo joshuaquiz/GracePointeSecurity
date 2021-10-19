@@ -57,7 +57,7 @@ namespace GracePointeSecurity.Library
             }
 
             await new AmazonSimpleNotificationServiceClient(
-                    new BasicAWSCredentials("AKIAXUZ34F56PWGQRY5M", "nlfnbrBpNH2II9a1Eymu7LxDD1SdtnjFAArfq781"),
+                    new BasicAWSCredentials(State.AwsCredentials.AccessKeyId, State.AwsCredentials.SecretAccessKey),
                     RegionEndpoint.USEast1)
                 .PublishAsync(
                     new PublishRequest

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace GracePointeSecurity.Library
 {
-	public sealed class CameraFilesLocationsConfiguration : INotifyPropertyChanged
+    public sealed class CameraFilesLocationsConfiguration : INotifyPropertyChanged
 	{
         private bool _shouldMove;
 		private string _originalVideoFolder;
