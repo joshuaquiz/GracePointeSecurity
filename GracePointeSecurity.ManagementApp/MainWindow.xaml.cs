@@ -35,5 +35,10 @@ namespace GracePointeSecurity.ManagementApp
 			State.UpdateCurrentState();
 			BackgroundJobs.ResetSettingsBiasedJobs();
 		}
+
+        private void LocateButton_OnClickButton_Onclick(object sender, RoutedEventArgs e)
+		{
+			new SettingsWindow().ShowDialog();
+		}
     }
 }

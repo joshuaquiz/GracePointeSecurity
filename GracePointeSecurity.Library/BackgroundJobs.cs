@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -6,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Amazon;
+using Amazon.CloudWatch;
+using Amazon.CloudWatch.Model;
 using Amazon.Runtime;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
@@ -35,7 +38,7 @@ namespace GracePointeSecurity.Library
         {
             RecurringJob.AddOrUpdate(
                 MoveFileJobId,
-                () => MoveFiles(),
+                () => MoveFilesAsync(),
                 Cron.Hourly(),
                 TimeZoneInfo.Local);
             RecurringJob.Trigger(MoveFileJobId);
@@ -44,19 +47,55 @@ namespace GracePointeSecurity.Library
         public static async Task MaintenanceJobAsync()
         {
             var statusText = new StringBuilder();
+            var metricData = new List<MetricDatum>();
             foreach (var d in DriveInfo.GetDrives().Where(x => x.IsReady))
             {
+                var usedSpace = d.TotalSize - d.AvailableFreeSpace;
                 statusText.AppendLine($"{d.DriveType} Drive {d.Name} \"{d.VolumeLabel}\" - {d.DriveFormat}");
                 var percentComplete = (int)Math.Round((double)(100 * (d.TotalSize - d.AvailableFreeSpace)) / d.TotalSize);
-                var usedSpaceString = $"Used space: {BytesToString(d.TotalSize - d.AvailableFreeSpace)}";
+                var usedSpaceString = $"Used space: {BytesToString(usedSpace)}";
                 var remainingSpaceString = $"Remaining space: {BytesToString(d.AvailableFreeSpace)}";
                 statusText.AppendLine(usedSpaceString + new string(' ', 185 - (usedSpaceString.Length + remainingSpaceString.Length)) + remainingSpaceString);
                 statusText.AppendLine("|" + new string('=', percentComplete) + new string('_', 100-percentComplete) + "|");
                 statusText.AppendLine($"Total size: {BytesToString(d.TotalSize)}");
                 statusText.AppendLine();
+                metricData.Add(
+                    new MetricDatum
+                    {
+                        MetricName = "UsedSpace",
+                        Dimensions = new List<Dimension>
+                        {
+                            new Dimension
+                            {
+                                Name = Environment.MachineName,
+                                Value = d.Name
+                            }
+                        },
+                        StatisticValues = new StatisticSet(),
+                        TimestampUtc = DateTime.UtcNow,
+                        Unit = StandardUnit.Count,
+                        Value = usedSpace
+                    });
+                metricData.Add(
+                    new MetricDatum
+                    {
+                        MetricName = "FreeSpace",
+                        Dimensions = new List<Dimension>
+                        {
+                            new Dimension
+                            {
+                                Name = Environment.MachineName,
+                                Value = d.Name
+                            }
+                        },
+                        StatisticValues = new StatisticSet(),
+                        TimestampUtc = DateTime.UtcNow,
+                        Unit = StandardUnit.Count,
+                        Value = d.AvailableFreeSpace
+                    });
             }
 
-            await new AmazonSimpleNotificationServiceClient(
+            var notification = new AmazonSimpleNotificationServiceClient(
                     new BasicAWSCredentials(State.AwsCredentials.AccessKeyId, State.AwsCredentials.SecretAccessKey),
                     RegionEndpoint.USEast1)
                 .PublishAsync(
@@ -66,6 +105,17 @@ namespace GracePointeSecurity.Library
                         Subject = "GP Cameras Drive Info",
                         Message = statusText.ToString()
                     });
+
+            var metrics = new AmazonCloudWatchClient(
+                    new BasicAWSCredentials(State.AwsCredentials.AccessKeyId, State.AwsCredentials.SecretAccessKey),
+                    RegionEndpoint.USEast1)
+                .PutMetricDataAsync(
+                    new PutMetricDataRequest
+                    {
+                        MetricData = metricData,
+                        Namespace = "GP Cameras Hard Drives"
+                    });
+            await Task.WhenAll(notification, metrics);
         }
 
         private static string BytesToString(long byteCount)
@@ -82,7 +132,7 @@ namespace GracePointeSecurity.Library
             return (Math.Sign(byteCount) * num).ToString(CultureInfo.InvariantCulture) + suf[place];
         }
 
-        public static void MoveFiles()
+        public static async Task MoveFilesAsync()
         {
             var stopwatch = Stopwatch.StartNew();
             var originalFolder = State.CurrentState.OriginalVideoFolder;
@@ -114,6 +164,56 @@ namespace GracePointeSecurity.Library
             stopwatch.Stop();
             Logging.AddLog($"Last run: Moved {fileCount} in {stopwatch.Elapsed:g}");
             State.CurrentState.LastRun = LastRan();
+
+            var metricData = new List<MetricDatum>();
+            foreach (var d in DriveInfo.GetDrives().Where(x => x.IsReady))
+            {
+                var usedSpace = d.TotalSize - d.AvailableFreeSpace;
+                metricData.Add(
+                    new MetricDatum
+                    {
+                        MetricName = "UsedSpace",
+                        Dimensions = new List<Dimension>
+                        {
+                            new Dimension
+                            {
+                                Name = Environment.MachineName,
+                                Value = d.Name
+                            }
+                        },
+                        StatisticValues = new StatisticSet(),
+                        TimestampUtc = DateTime.UtcNow,
+                        Unit = StandardUnit.Count,
+                        Value = usedSpace
+                    });
+                metricData.Add(
+                    new MetricDatum
+                    {
+                        MetricName = "FreeSpace",
+                        Dimensions = new List<Dimension>
+                        {
+                            new Dimension
+                            {
+                                Name = Environment.MachineName,
+                                Value = d.Name
+                            }
+                        },
+                        StatisticValues = new StatisticSet(),
+                        TimestampUtc = DateTime.UtcNow,
+                        Unit = StandardUnit.Count,
+                        Value = d.AvailableFreeSpace
+                    });
+            }
+
+            await new AmazonCloudWatchClient(
+                    new BasicAWSCredentials(State.AwsCredentials.AccessKeyId, State.AwsCredentials.SecretAccessKey),
+                    RegionEndpoint.USEast1)
+                .PutMetricDataAsync(
+                    new PutMetricDataRequest
+                    {
+                        MetricData = metricData,
+                        Namespace = "GP Cameras Hard Drives"
+                    });
         }
 
         private static DateTime? LastRan()
