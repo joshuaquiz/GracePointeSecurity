@@ -12,7 +12,7 @@ namespace GracePointeSecurity.ManagementApp;
 /// <summary>
 /// Interaction logic for LocateWindow.xaml
 /// </summary>
-public partial class LocateWindow : Window
+public partial class LocateWindow
 {
     private readonly ObservableCollection<CameraModel> _cameraModels = new();
 
@@ -83,14 +83,14 @@ public partial class LocateWindow : Window
     {
         public string CameraName =>
             System.IO.Path.GetFileName(Path)
-                ?.Split('.')[0];
+                .Split('.')[0];
 
         public string Date =>
             System.IO.Path.GetFileName(Path)
-                ?.Split('.')[1];
+                .Split('.')[1];
 
         public string Time =>
             System.IO.Path.GetFileName(Path)
-                ?.Split('.')[1];
+                .Split('.')[1];
     }
 }

@@ -11,6 +11,18 @@ public partial class MainWindow
         {
             new ProductKey().ShowDialog();
         }
+        else
+        {
+            var result = ProductKey.GetProductKey(
+                    State.AwsCredentials.ProductionKey,
+                    State.AwsCredentials.OriginationName)
+                .GetAwaiter()
+                .GetResult();
+            if (result?.IsAlreadySetup != true)
+            {
+                new ProductKey().ShowDialog();
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(State.CurrentState.OriginalVideoFolder)
             || string.IsNullOrWhiteSpace(State.CurrentState.SortedVideoFolder))

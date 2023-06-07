@@ -5,10 +5,12 @@ namespace GracePointeSecurity.Library;
 
 public sealed class AwsCredentials : INotifyPropertyChanged
 {
-    private string _accessKeyId;
-    private string _secretAccessKey;
+    private string? _accessKeyId;
+    private string? _secretAccessKey;
+    private string? _productionKey;
+    private string? _originationName;
 
-    public string AccessKeyId
+    public string? AccessKeyId
     {
         get => _accessKeyId;
         set
@@ -18,7 +20,7 @@ public sealed class AwsCredentials : INotifyPropertyChanged
         }
     }
 
-    public string SecretAccessKey
+    public string? SecretAccessKey
     {
         get => _secretAccessKey;
         set
@@ -28,8 +30,28 @@ public sealed class AwsCredentials : INotifyPropertyChanged
         }
     }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    public string? ProductionKey
+    {
+        get => _productionKey;
+        set
+        {
+            _productionKey = value;
+            OnPropertyChanged();
+        }
+    }
 
-    private void OnPropertyChanged([CallerMemberName] string propertyName = null) =>
+    public string? OriginationName
+    {
+        get => _originationName;
+        set
+        {
+            _originationName = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

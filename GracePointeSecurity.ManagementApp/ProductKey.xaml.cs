@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Net.Http;
+using System.Threading.Tasks;
 using System.Windows;
 using GracePointeSecurity.Library;
 using Newtonsoft.Json;
@@ -19,11 +20,10 @@ public partial class ProductKey
     private async void SubmitButton_OnClick(object sender, RoutedEventArgs e)
     {
         SpinnerGrid.Visibility = Visibility.Visible;
-        var responseString = await new WebClient()
-            .DownloadStringTaskAsync(
-                $"https://9pzm7c9rci.execute-api.us-east-1.amazonaws.com/lol/camera-app-product-key?productKey={ProductKeyInput.Text}&orgName={OrganizationNameInput.Text}");
-        var result = JsonConvert.DeserializeObject<ProductKeyResponse>(responseString);
-        if (result.IsAlreadySetup)
+        var result = await GetProductKey(
+            ProductKeyInput.Text,
+            OrganizationNameInput.Text);
+        if (result?.IsAlreadySetup == true)
         {
             MessageBox.Show(
                 this,
@@ -35,11 +35,32 @@ public partial class ProductKey
                 MessageBoxOptions.DefaultDesktopOnly);
             Application.Current.Shutdown();
         }
+        else if (result == null)
+        {
+            MessageBox.Show(
+                this,
+                "The key was not found",
+                "Invalid configuration",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error,
+                MessageBoxResult.OK,
+                MessageBoxOptions.DefaultDesktopOnly);
+        }
         else
         {
             State.AwsCredentials.AccessKeyId = result.AccessKeyId;
             State.AwsCredentials.SecretAccessKey = result.SecretAccessKey;
             Close();
         }
+    }
+
+    public static async ValueTask<ProductKeyResponse?> GetProductKey(
+        string? productionKey,
+        string? organizationName)
+    {
+        var responseString = await new HttpClient()
+            .GetStringAsync(
+                $"https://9pzm7c9rci.execute-api.us-east-1.amazonaws.com/lol/camera-app-product-key?productKey={productionKey}&orgName={organizationName}");
+        return JsonConvert.DeserializeObject<ProductKeyResponse?>(responseString);
     }
 }

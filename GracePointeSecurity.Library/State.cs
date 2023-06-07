@@ -50,7 +50,7 @@ public sealed class State
         var config = AwsCredentialsConfiguration;
         config.PropertyChanged += (sender, _) =>
         {
-            AwsCredentialsConfiguration = (AwsCredentials) sender;
+            AwsCredentialsConfiguration = sender as AwsCredentials;
         };
         return config;
     }
@@ -60,7 +60,7 @@ public sealed class State
         var config = CameraFilesLocationsConfiguration;
         config.PropertyChanged += (sender, _) =>
         {
-            CameraFilesLocationsConfiguration = (CameraFilesLocationsConfiguration) sender;
+            CameraFilesLocationsConfiguration = sender as CameraFilesLocationsConfiguration;
         };
         return config;
     }

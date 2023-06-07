@@ -7,7 +7,7 @@ namespace GracePointeSecurity.Library;
 
 public static class FileActions
 {
-    public static IEnumerable<string> GetCurrentFilesInFolder(string folderToSearch) =>
+    public static IEnumerable<string> GetCurrentFilesInFolder(string? folderToSearch) =>
         folderToSearch != null && new DirectoryInfo(folderToSearch).Exists
             ? Directory.EnumerateFiles(folderToSearch)
             : Enumerable.Empty<string>();
