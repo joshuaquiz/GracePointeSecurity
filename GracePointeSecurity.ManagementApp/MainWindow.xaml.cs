@@ -7,24 +7,19 @@ public partial class MainWindow
 {
     public MainWindow()
     {
-        if (string.IsNullOrWhiteSpace(State.AwsCredentials.SecretAccessKey))
+        while ((string.IsNullOrWhiteSpace(State.AwsCredentials.SecretAccessKey)
+               || string.IsNullOrWhiteSpace(State.AwsCredentials.ProductionKey)
+               || string.IsNullOrWhiteSpace(State.AwsCredentials.OriginationName))
+               && ProductKey.GetProductKey(
+                       State.AwsCredentials.ProductionKey,
+                       State.AwsCredentials.OriginationName)
+                   .GetAwaiter()
+                   .GetResult()?.IsAlreadySetup != true)
         {
             new ProductKey().ShowDialog();
         }
-        else
-        {
-            var result = ProductKey.GetProductKey(
-                    State.AwsCredentials.ProductionKey,
-                    State.AwsCredentials.OriginationName)
-                .GetAwaiter()
-                .GetResult();
-            if (result?.IsAlreadySetup != true)
-            {
-                new ProductKey().ShowDialog();
-            }
-        }
 
-        if (string.IsNullOrWhiteSpace(State.CurrentState.OriginalVideoFolder)
+        while (string.IsNullOrWhiteSpace(State.CurrentState.OriginalVideoFolder)
             || string.IsNullOrWhiteSpace(State.CurrentState.SortedVideoFolder))
         {
             new SettingsWindow().ShowDialog();

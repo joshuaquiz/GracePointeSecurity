@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using GracePointeSecurity.Library;
@@ -54,13 +55,21 @@ public partial class ProductKey
         }
     }
 
-    public static async ValueTask<ProductKeyResponse?> GetProductKey(
+    public static async Task<ProductKeyResponse?> GetProductKey(
         string? productionKey,
         string? organizationName)
     {
-        var responseString = await new HttpClient()
-            .GetStringAsync(
-                $"https://9pzm7c9rci.execute-api.us-east-1.amazonaws.com/lol/camera-app-product-key?productKey={productionKey}&orgName={organizationName}");
-        return JsonConvert.DeserializeObject<ProductKeyResponse?>(responseString);
+        try
+        {
+            var responseString = await new HttpClient()
+                .GetStringAsync(
+                    $"https://9pzm7c9rci.execute-api.us-east-1.amazonaws.com/lol/camera-app-product-key?productKey={productionKey}&orgName={organizationName}");
+            return JsonConvert.DeserializeObject<ProductKeyResponse?>(responseString);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }
