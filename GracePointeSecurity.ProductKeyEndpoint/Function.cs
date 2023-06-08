@@ -17,81 +17,80 @@ using DynamoDBContextConfig = Amazon.DynamoDBv2.DataModel.DynamoDBContextConfig;
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace GracePointeSecurity.ProductKeyEndpoint
+namespace GracePointeSecurity.ProductKeyEndpoint;
+
+public class Function
 {
-    public class Function
+    public async Task<APIGatewayProxyResponse?> FunctionHandler(APIGatewayProxyRequest? request, ILambdaContext context)
     {
-        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
+        context.Logger.LogLine(JsonConvert.SerializeObject(request));
+        if (string.IsNullOrWhiteSpace(request?.QueryStringParameters["productKey"])
+            || string.IsNullOrWhiteSpace(request.QueryStringParameters["orgName"]))
         {
-            context.Logger.LogLine(JsonConvert.SerializeObject(request));
-            if (string.IsNullOrWhiteSpace(request?.QueryStringParameters["productKey"])
-                || string.IsNullOrWhiteSpace(request.QueryStringParameters["orgName"]))
-            {
-                context.Logger.LogLine("No product key");
-                return default;
-            }
+            context.Logger.LogLine("No product key");
+            return default;
+        }
 
-            var dynamoDbClient = new AmazonDynamoDBClient();
-            AWSConfigsDynamoDB.Context.TypeMappings[typeof(ProductKey)] =
-                new TypeMapping(typeof(ProductKey), "DriveInfoProductKeys");
-            var dbContext = new DynamoDBContext(
-                dynamoDbClient,
-                new DynamoDBContextConfig
-                {
-                    Conversion = DynamoDBEntryConversion.V2
-                });
-            var productKeyData = await dbContext.LoadAsync(
-                new ProductKey
-                {
-                    InstallGuid = Guid.Parse(request.QueryStringParameters["productKey"]),
-                    OrgName = request.QueryStringParameters["orgName"]
-                });
-            var iamClient = new AmazonIdentityManagementServiceClient();
-            var iamResults = await iamClient.ListUsersAsync();
-            context.Logger.LogLine(JsonConvert.SerializeObject(iamResults));
-            var maybeUsers = iamResults?.Users?.Where(x => x.UserName == request.QueryStringParameters["orgName"]).ToList();
-            ProductKeyResponse productKeyResponse;
-            if (maybeUsers is {Count: 1})
+        var dynamoDbClient = new AmazonDynamoDBClient();
+        AWSConfigsDynamoDB.Context.TypeMappings[typeof(ProductKey)] =
+            new TypeMapping(typeof(ProductKey), "DriveInfoProductKeys");
+        var dbContext = new DynamoDBContext(
+            dynamoDbClient,
+            new DynamoDBContextConfig
             {
-                productKeyResponse = new ProductKeyResponse
-                {
-                    IsAlreadySetup = true
-                };
-            }
-            else
+                Conversion = DynamoDBEntryConversion.V2
+            });
+        var productKeyData = await dbContext.LoadAsync(
+            new ProductKey
             {
-                var createResult = await iamClient.CreateUserAsync(
-                    new CreateUserRequest
-                    {
-                        UserName = productKeyData.OrgName
-                    });
-                context.Logger.LogLine(JsonConvert.SerializeObject(createResult));
-                var iamResult = await iamClient.AddUserToGroupAsync(
-                    new AddUserToGroupRequest
-                    {
-                        UserName = productKeyData.OrgName,
-                        GroupName = "GpDriveInfo"
-                    });
-                context.Logger.LogLine(JsonConvert.SerializeObject(iamResult));
-                var accessKey = await iamClient.CreateAccessKeyAsync(
-                    new CreateAccessKeyRequest
-                    {
-                        UserName = productKeyData.OrgName
-                    });
-                context.Logger.LogLine(JsonConvert.SerializeObject(accessKey));
-                productKeyResponse = new ProductKeyResponse
-                {
-                    IsAlreadySetup = false,
-                    AccessKeyId = accessKey.AccessKey.AccessKeyId,
-                    SecretAccessKey = accessKey.AccessKey.SecretAccessKey
-                };
-            }
-
-            return new APIGatewayProxyResponse
+                InstallGuid = Guid.Parse(request.QueryStringParameters["productKey"]),
+                OrgName = request.QueryStringParameters["orgName"]
+            });
+        var iamClient = new AmazonIdentityManagementServiceClient();
+        var iamResults = await iamClient.ListUsersAsync();
+        context.Logger.LogLine(JsonConvert.SerializeObject(iamResults));
+        var maybeUsers = iamResults?.Users?.Where(x => x.UserName == request.QueryStringParameters["orgName"]).ToList();
+        ProductKeyResponse productKeyResponse;
+        if (maybeUsers is {Count: 1})
+        {
+            productKeyResponse = new ProductKeyResponse
             {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = JsonConvert.SerializeObject(productKeyResponse)
+                IsAlreadySetup = true
             };
         }
+        else
+        {
+            var createResult = await iamClient.CreateUserAsync(
+                new CreateUserRequest
+                {
+                    UserName = productKeyData.OrgName
+                });
+            context.Logger.LogLine(JsonConvert.SerializeObject(createResult));
+            var iamResult = await iamClient.AddUserToGroupAsync(
+                new AddUserToGroupRequest
+                {
+                    UserName = productKeyData.OrgName,
+                    GroupName = "GpDriveInfo"
+                });
+            context.Logger.LogLine(JsonConvert.SerializeObject(iamResult));
+            var accessKey = await iamClient.CreateAccessKeyAsync(
+                new CreateAccessKeyRequest
+                {
+                    UserName = productKeyData.OrgName
+                });
+            context.Logger.LogLine(JsonConvert.SerializeObject(accessKey));
+            productKeyResponse = new ProductKeyResponse
+            {
+                IsAlreadySetup = false,
+                AccessKeyId = accessKey.AccessKey.AccessKeyId,
+                SecretAccessKey = accessKey.AccessKey.SecretAccessKey
+            };
+        }
+
+        return new APIGatewayProxyResponse
+        {
+            StatusCode = (int)HttpStatusCode.OK,
+            Body = JsonConvert.SerializeObject(productKeyResponse)
+        };
     }
 }

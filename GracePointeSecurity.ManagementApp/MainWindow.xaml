@@ -12,25 +12,29 @@
 	<DockPanel>
 		<ToolBarTray
 			DockPanel.Dock="Top">
-			<ToolBar>
-				<Button
-					Name="SettingsButton"
-					Content="Settings"
-					Click="SettingsButton_Onclick"></Button>
-			</ToolBar>
+            <ToolBar>
+                <Button
+                    Name="SettingsButton"
+                    Content="Settings"
+                    Click="SettingsButton_Onclick" />
+                <Button
+                    Name="LocateButton"
+                    Content="Settings"
+                    Click="LocateButton_OnClickButton_Onclick" />
+            </ToolBar>
 		</ToolBarTray>
 		<Label
 			DockPanel.Dock="Top"
 			Margin="10"
 			Content="{Binding LastRun}"
 			ContentStringFormat="yyyy-MM-dd HH:mm:ss"
-			DataContext="{Binding Source={x:Static library:State.CurrentState}}"></Label>
+			DataContext="{Binding Source={x:Static library:State.CurrentState}}" />
 		<TextBox
 			DockPanel.Dock="Left"
 			Margin="10"
 			x:Name="Logs"
 			IsReadOnly="True"
 			HorizontalScrollBarVisibility="Auto"
-			VerticalScrollBarVisibility="Auto"></TextBox>
+			VerticalScrollBarVisibility="Auto" />
 	</DockPanel>
 </Window>
